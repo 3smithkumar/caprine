@@ -3,6 +3,7 @@ import {readFileSync, existsSync} from 'node:fs';
 import {
 	app,
 	nativeImage,
+	powerMonitor,
 	screen as electronScreen,
 	session,
 	shell,
@@ -101,6 +102,16 @@ app.on('ready', () => {
 	electronScreen.on('display-removed', () => {
 		const [x, y] = mainWindow.getPosition();
 		mainWindow.setPosition(x, y);
+	});
+
+	// Reload the web contents when the computer resumes from sleep to re-establish
+	// the Messenger WebSocket connection, which often becomes stale after suspend.
+	powerMonitor.on('resume', async () => {
+		if (mainWindow) {
+			// Wait for network to be available before reloading
+			await ensureOnline();
+			mainWindow.webContents.reloadIgnoringCache();
+		}
 	});
 });
 
